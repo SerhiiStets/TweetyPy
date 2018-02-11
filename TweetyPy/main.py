@@ -5,6 +5,22 @@ import tweepy
 import markovify
 from api import *
 import re
+import sys
+
+
+def y_or_n(s):
+    if s == "y" or s == "n" or s == "Y" or s == "N":
+        return True
+    else:
+        return False
+
+
+def is_int(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
 
 
 def tweet_generator(api):
@@ -16,12 +32,30 @@ def tweet_generator(api):
     text_model = markovify.Text(text)
 
     # Print randomly-generated sentence of no more than 280 characters for twitter
-    for i in range(1):
-        result = text_model.make_short_sentence(280)
-        #api.update_status(result)
+    result = text_model.make_short_sentence(280)
+    print(result)
+    print("Do you want to post this (y/n)")
+
+    s = input()
+
+    while not y_or_n(s):
+        print("\nWrong parameter--\n")
         print(result)
+        print("Do you want to post this (y/n)")
+        s = input()
+
+    if s == "n" or s == "N":
+        sys.exit()
+    else:
+        api.update_status(result)
 
     print('________________')
+
+
+def print_top(array):
+    print("0) Quit")
+    for i in range(9):
+        print(str(i + 1) + ") " + array[i]["name"])
 
 
 def main():
@@ -32,14 +66,27 @@ def main():
     names = api.trends_place(id=23424977)[0]['trends']
 
     open('data.txt', 'w').close()
-    print(names[0]['name'])
-    print('________________ \n')
-    request = names[0]['name']
+    print_top(names)
 
-    with open('data.txt', 'a', encoding="utf8") as the_file:
+    num = input()
+
+    while not is_int(num):
+        print("\nWrong parameter--\n")
+        print_top(names)
+        num = input()
+
+    if num == "0":
+        sys.exit()
+
+    request = names[int(num) - 1]['name']
+
+    print("\n" + request)
+    print('________________ \n')
+
+    with open('data.txt', 'a', encoding="utf8") as file:
         open('data.txt', 'w').close()
         last_tweet = ""
-        for tweet in tweepy.Cursor(api.search, q=request + "-filter:retweets", result_type="mixed", lang="en").items(1):
+        for tweet in tweepy.Cursor(api.search, q=request + " -filter:retweets", result_type="mixed", lang="en").items(2500):
             print(tweet.text)
 
             text = tweet.text
@@ -60,7 +107,7 @@ def main():
             end_text = re.sub(r'http\S+', '', end_text, flags=re.MULTILINE)
 
             print('\n')
-            the_file.write(end_text + "\n")
+            file.write(end_text + "\n")
 
     tweet_generator(api)
 
