@@ -31,22 +31,25 @@ def tweet_generator(api):
     # Build the model.
     text_model = markovify.Text(text)
 
-    # Print randomly-generated sentence of no more than 280 characters for twitter
+    # Print randomly-generated sentence of no more than 280 characters for tweet
     result = text_model.make_short_sentence(280)
+    print('________________\n')
     print(result)
-    print("Do you want to post this (y/n)")
+    print("\nDo you want to post this (y/n)")
 
     s = input()
 
+    # Check input parameter
     while not y_or_n(s):
         print("\nWrong parameter--\n")
         print(result)
-        print("Do you want to post this (y/n)")
+        print("\nDo you want to post this (y/n)")
         s = input()
 
     if s == "n" or s == "N":
         sys.exit()
     else:
+        # Post tweet
         api.update_status(result)
 
     print('________________')
@@ -65,16 +68,21 @@ def main():
     api = tweepy.API(auth)
     names = api.trends_place(id=23424977)[0]['trends']
 
+    # Clear file
     open('data.txt', 'w').close()
+
+    # Print top trends
     print_top(names)
 
     num = input()
 
+    # Check what # do you choose
     while not is_int(num):
         print("\nWrong parameter--\n")
         print_top(names)
         num = input()
 
+    # Quit
     if num == "0":
         sys.exit()
 
@@ -83,7 +91,9 @@ def main():
     print("\n" + request)
     print('________________ \n')
 
+    # Open file for record
     with open('data.txt', 'a', encoding="utf8") as file:
+        # Clear file
         open('data.txt', 'w').close()
         last_tweet = ""
         for tweet in tweepy.Cursor(api.search, q=request + " -filter:retweets", result_type="mixed", lang="en").items(2500):
@@ -91,7 +101,7 @@ def main():
 
             text = tweet.text
 
-            # check for repeated tweets
+            # Check for repeated tweets
             if text == last_tweet:
                 continue
             else:
@@ -103,12 +113,15 @@ def main():
 
             end_text = str(text)
 
-            # deleting all urls
+            # Deleting all urls in tweet
             end_text = re.sub(r'http\S+', '', end_text, flags=re.MULTILINE)
 
             print('\n')
+
+            # Write tweet to the file
             file.write(end_text + "\n")
 
+    # Create tweet
     tweet_generator(api)
 
 if __name__ == "__main__":
