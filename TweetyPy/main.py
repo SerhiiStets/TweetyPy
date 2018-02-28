@@ -34,6 +34,24 @@ def tweet_generator(api):
     # Print randomly-generated sentence of no more than 280 characters for tweet
     result = text_model.make_short_sentence(280)
     print('________________\n')
+
+    print("\nDo you want to add #? (y/n)")
+    print(result)
+
+    s = input()
+    # Check input parameter
+    while not y_or_n(s):
+        print("\nWrong parameter--\n")
+        print(result)
+        print("\nDo you want to add #? (y/n)")
+        s = input()
+
+    if s == "y" or s == "Y":
+        # Post tweet
+        print("Write your #")
+        htag = input()
+        result = result + " " + htag
+
     print(result)
     print("\nDo you want to post this (y/n)")
 
