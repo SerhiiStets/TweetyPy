@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
-import tweepy
-import markovify
-from api import *
 import re
 import sys
+import tweepy
+import markovify
+
+from api import *
+from os import path
+from wordcloud import WordCloud
 
 
 def y_or_n(s):
@@ -23,7 +26,22 @@ def is_int(s):
         return False
 
 
-def tweet_generator(api):
+def word_cloud_generator(api, request):
+    d = path.dirname(__file__)
+    text = open(path.join(d, 'data.txt'), encoding="utf8").read()
+    wc = WordCloud(background_color="white", collocations=False)
+    wc.generate(text)
+    wc.to_file('cloud.png')
+
+    # load image
+    imagePath = "cloud.png"
+    status = "Most popular words\n" + request
+
+    # Send the tweet.
+    api.update_with_media(imagePath, status)
+
+
+def tweet_generator(api, request):
     # Get raw text as string.
     with open("data.txt", encoding="utf8") as f:
         text = f.read()
@@ -53,7 +71,10 @@ def tweet_generator(api):
         result = result + " " + htag
 
     print(result)
-    print("\nDo you want to post this (y/n)")
+
+    # TODO edit tags if wrong
+
+    print("\nDo you want to post this? (y/n)")
 
     s = input()
 
@@ -61,14 +82,29 @@ def tweet_generator(api):
     while not y_or_n(s):
         print("\nWrong parameter--\n")
         print(result)
-        print("\nDo you want to post this (y/n)")
+        print("\nDo you want to post this? (y/n)")
+        s = input()
+
+    if s == "y" or s == "Y":
+        # Post tweet
+        api.update_status(result)
+
+    print("\nGenerate word cloud? (y/n)")
+
+    s = input()
+
+    # Check input parameter
+    while not y_or_n(s):
+        print("\nWrong parameter--\n")
+        print(result)
+        print("\nGenerate word cloud? (y/n)")
         s = input()
 
     if s == "n" or s == "N":
         sys.exit()
     else:
-        # Post tweet
-        api.update_status(result)
+        # Generate word cloud
+        word_cloud_generator(api, request)
 
     print('________________')
 
@@ -114,7 +150,8 @@ def main():
         # Clear file
         open('data.txt', 'w').close()
         last_tweet = ""
-        for tweet in tweepy.Cursor(api.search, q=request + " -filter:retweets", result_type="mixed", lang="en").items(2500):
+        for tweet in tweepy.Cursor(api.search, q=request + " -filter:retweets", result_type="mixed", lang="en").items(
+                2500):
             print(tweet.text)
 
             text = tweet.text
@@ -140,7 +177,8 @@ def main():
             file.write(end_text + "\n")
 
     # Create tweet
-    tweet_generator(api)
+    tweet_generator(api, request)
+
 
 if __name__ == "__main__":
     main()
