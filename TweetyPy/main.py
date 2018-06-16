@@ -9,6 +9,7 @@ import markovify
 from api import *
 from os import path
 from wordcloud import WordCloud
+import matplotlib.pyplot as plt
 
 
 def y_or_n(s):
@@ -29,15 +30,20 @@ def is_int(s):
 def word_cloud_generator(api, request):
     d = path.dirname(__file__)
     text = open(path.join(d, 'data.txt'), encoding="utf8").read()
-    wc = WordCloud(background_color="white", collocations=False)
-    wc.generate(text)
-    wc.to_file('cloud.png')
+    wc = WordCloud(width=1600, height=800, background_color="white", collocations=False).generate(text)
+
+    plt.figure(figsize=(20, 10))  # specify the size of the figure
+
+    plt.imshow(wc)
+    plt.axis("off")
+    plt.tight_layout(pad=0)
+    plt.savefig('cloud.png', facecolor='white', bbox_inches='tight')
 
     # load image
     imagePath = "cloud.png"
     status = "Most popular words\n" + request
 
-    # Send the tweet.
+    # Send the tweet
     api.update_with_media(imagePath, status)
 
 
@@ -46,7 +52,7 @@ def tweet_generator(api, request):
     with open("data.txt", encoding="utf8") as f:
         text = f.read()
 
-    # Build the model.
+    # Build the model
     text_model = markovify.Text(text)
 
     # Print randomly-generated sentence of no more than 280 characters for tweet
