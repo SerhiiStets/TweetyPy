@@ -1,5 +1,5 @@
 # TweetyPy
-Machine learning app that take data from the top trends on twitter create word clouds and generate own tweets using Markov chain.<br />
+Machine learning app that can create own tweets and word clouds by learning from user statuses or top trend tweets using Markov chain<br />
 [Twitter profile](https://twitter.com/_TweetyPy_)
 
 ## Installation
