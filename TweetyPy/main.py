@@ -48,11 +48,11 @@ def is_int(s):
 def word_cloud_generator(api, request):
     d = path.dirname(__file__)
     text = open(path.join(d, 'data.txt'), encoding="utf8").read()
-    wc = WordCloud(width=1600, height=800, background_color="white", collocations=False).generate(text)
+    wc = WordCloud(width=1920, height=1080, background_color="white", collocations=False).generate(text)
 
     plt.figure(figsize=(20, 10))  # specify the size of the figure
 
-    plt.imshow(wc)
+    plt.imshow(wc, interpolation="nearest", aspect="auto")
     plt.axis("off")
     plt.tight_layout(pad=0)
     plt.savefig('cloud.png', facecolor='white', bbox_inches='tight')
@@ -105,6 +105,7 @@ def tweet_generator(api, request):
         if s == "y" or s == "Y":
             # Post tweet
             api.update_status(tweet)
+
         else:
             print("\nDo you want to create new sentence? (y/n)")
             s = input()
@@ -131,13 +132,13 @@ def tweet_generator(api, request):
             s = input()
 
         if s == "n" or s == "N":
-            sys.exit()
+            main()
         else:
             # Generate word cloud
             word_cloud_generator(api, request)
 
         print('________________')
-        sys.exit(0)
+        main()
 
     # Get raw text as string.
     with open("data.txt", encoding="utf8") as f:
@@ -217,7 +218,6 @@ def acc_tweet(api):
         with open('data.txt', 'a', encoding="utf8") as file:
             # Clear file
             open('data.txt', 'w').close()
-            # + " -filter:retweets"
             for status in tweepy.Cursor(api.user_timeline, id=user).items():
                 # Checking for retweets, replies and other
                 if (not status.retweeted) and ('RT @' not in status.text) and (not status.text.startswith("@")):
