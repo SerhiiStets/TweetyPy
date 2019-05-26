@@ -10,10 +10,11 @@ import socket
 import logging
 
 from api import *
+import numpy as np
 from os import path
+from PIL import Image
 from tweepy import TweepError
 from wordcloud import WordCloud
-import matplotlib.pyplot as plt
 
 
 # Checking internet connection, return true/false
@@ -49,21 +50,33 @@ def is_int(s):
         return False
 
 
+# Print main menu
+def print_top(array):
+    print("q ) Quit")
+    print("0 ) Acc average tweet")
+    for i in range(15):
+        print(str(i + 1) + " ) " + array[i]["name"]) if i <= 8 else print(str(i + 1) + ") " + array[i]["name"])
+
+
 # Creating word cloud
 def word_cloud_generator(api, request):
     d = path.dirname(__file__)
     text = open(path.join(d, 'data.txt'), encoding="utf8").read()
-    wc = WordCloud(width=1920, height=1080, background_color="white", collocations=False, max_font_size=None, font_step=1, mode='RGB', colormap=None, normalize_plurals=True).generate(text)
-
-    plt.figure(figsize=(20, 10))  # specify the size of the figure
-
-    plt.imshow(wc, interpolation="nearest", aspect="auto")
-    plt.axis("off")
-    plt.tight_layout(pad=0)
-    plt.savefig('cloud.png', facecolor='white', bbox_inches='tight')
 
     # load image
     imagePath = "cloud.png"
+
+    # read the mask image
+    twitter_mask = np.array(Image.open(path.join(d, "twitter_logo.png")))
+
+    wc = WordCloud(background_color="white", mask=twitter_mask, contour_width=3,
+                   contour_color='steelblue')
+
+    # generate word cloud
+    wc.generate(text)
+
+    # store to file
+    wc.to_file(path.join(d, "cloud.png"))
 
     # Text for tweet
     status = "Most popular words\n" + request
@@ -73,9 +86,43 @@ def word_cloud_generator(api, request):
 
 
 #  Creating and posting tweet
-def tweet_generator(api, request):
+def tweet_generator(api, request, key):
     # Post settings
-    def settings(tweet):
+    def settings_acc(tweet, header, text_model):
+        print("\n" + header + tweet)
+        print("\nDo you want to post this? (y/n)")
+
+        s = input()
+
+        # Check input parameter
+        while not y_or_n(s):
+            print("\nWrong parameter--\n")
+            print(header + tweet)
+            print("\nDo you want to post this? (y/n)")
+            s = input()
+
+        if s == "y" or s == "Y":
+            # Post tweet
+            api.update_status(header + tweet)
+            print("\nDONE\n")
+            main()
+        else:
+            print("\nDo you want to create new sentence? (y/n)")
+            s = input()
+            # Check input parameter
+            while not y_or_n(s):
+                print("\nWrong parameter--\n")
+                print(header + tweet)
+                print("\nDo you want to create new sentence? (y/n)")
+                s = input()
+
+            if s == "y" or s == "Y":
+                tweet = text_model.make_short_sentence(280 - len(header))
+                settings_acc(tweet, header, text_model)
+        main()
+
+    # Post settings
+    def settings_topic(tweet):
         print('________________\n')
 
         print("\nDo you want to add #? (y/n)")
@@ -126,7 +173,7 @@ def tweet_generator(api, request):
 
             if s == "y" or s == "Y":
                 tweet = text_model.make_short_sentence(280)
-                settings(tweet)
+                settings_topic(tweet)
 
         print("\nGenerate word cloud? (y/n)")
 
@@ -155,53 +202,27 @@ def tweet_generator(api, request):
     # Build the model
     text_model = markovify.Text(text)
 
-    # Print randomly-generated sentence of no more than 280 characters for tweet
-    result = text_model.make_short_sentence(280)
-    settings(result)
+    if key == "acc":
+        # Tweet info header
+        header_text = "Average @" + request + " tweet:\n\n"
+        # Print randomly-generated sentence of no more than 280 characters for tweet
+        result = text_model.make_short_sentence(280 - len(header_text))
+        settings_acc(result, header_text, text_model)
+    else:
+        # Print randomly-generated sentence of no more than 280 characters for tweet
+        result = text_model.make_short_sentence(280)
+        settings_topic(result)
 
 
 def acc_tweet(api):
-    # Post settings
-    def settings(tweet, header, text_model):
-        print("\n" + header + tweet)
-        print("\nDo you want to post this? (y/n)")
-
-        s = input()
-
-        # Check input parameter
-        while not y_or_n(s):
-            print("\nWrong parameter--\n")
-            print(header + tweet)
-            print("\nDo you want to post this? (y/n)")
-            s = input()
-
-        if s == "y" or s == "Y":
-            # Post tweet
-            api.update_status(header + tweet)
-            print("\nDONE\n")
-        else:
-            print("\nDo you want to create new sentence? (y/n)")
-            s = input()
-            # Check input parameter
-            while not y_or_n(s):
-                print("\nWrong parameter--\n")
-                print(header + tweet)
-                print("\nDo you want to create new sentence? (y/n)")
-                s = input()
-
-            if s == "y" or s == "Y":
-                tweet = text_model.make_short_sentence(280 - len(header))
-                settings(tweet, header, text_model)
-        main()
-
     # Check if username exists
     def check_acc(account):
         try:
             # q1q0q1q1q3 - Example of non-existent username
             # Check if exist
             api.get_user(account)
-            # Go to create tweet
-            create_tweet(account)
+            return account
+
         except TweepError:
             print("\nWrong username------\n")
             print(account)
@@ -243,53 +264,17 @@ def acc_tweet(api):
                     print('\n')
                     # Write tweet to the file
                     file.write(end_text + "\n")
+        tweet_generator(api, user, "acc")
 
-        with open("data.txt", encoding="utf8") as f:
-            text = f.read()
-
-        # Build the model
-        text_model = markovify.Text(text)
-
-        # Tweet info header
-        header_text = "Average @" + user + " tweet:\n\n"
-        # Print randomly-generated sentence of no more than 280 characters for tweet
-        result = text_model.make_short_sentence(280 - len(header_text))
-        settings(result, header_text, text_model)
-
+    # Ask for user name
     print("Print username:")
     user = input()
-    check_acc(user)
+
+    # Go to create tweet, check_acc is checking if username exists
+    create_tweet(check_acc(user))
 
 
-def print_top(array):
-    print("q ) Quit")
-    print("0 ) Acc average tweet")
-    for i in range(15):
-        print(str(i + 1) + " ) " + array[i]["name"]) if i <= 8 else print(str(i + 1) + ") " + array[i]["name"])
-
-
-def main():
-    auth = tweepy.OAuthHandler(API_key, API_secret)
-    auth.set_access_token(AT_token, AT_secret)
-    auth.secure = True
-    api = tweepy.API(auth)
-    names = api.trends_place(id=23424977)[0]['trends']
-
-    # Clear file
-    open('data.txt', 'w').close()
-
-    # Print top trends
-    print_top(names)
-
-    num = input()
-
-    # Quit
-    if num == "q":
-        sys.exit()
-    # Create average account tweet
-    elif num == "0":
-        acc_tweet(api)
-
+def topic_tweet(api, names, num):
     # Check what # do you choose
     while not is_int(num) or int(num) > 15:
         print("\nWrong parameter--\n")
@@ -333,10 +318,36 @@ def main():
             file.write(end_text + "\n")
 
     # Create tweet
-    tweet_generator(api, request)
+    tweet_generator(api, request, "topic")
+
+
+def main():
+    auth = tweepy.OAuthHandler(API_key, API_secret)
+    auth.set_access_token(AT_token, AT_secret)
+    auth.secure = True
+    api = tweepy.API(auth)
+    names = api.trends_place(id=23424977)[0]['trends']
+
+    # Clear file
+    open('data.txt', 'w').close()
+
+    # Print top trends
+    print_top(names)
+
+    num = input()
+
+    # Quit
+    if num == "q":
+        sys.exit()
+    # Create average account tweet
+    elif num == "0":
+        acc_tweet(api)
+    else:
+        topic_tweet(api, names, num)
 
 
 if __name__ == "__main__":
+    # Checking for internet connection
     if internet_connection():
         main()
     else:
