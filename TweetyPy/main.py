@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
+# Importing modules
 import re
 import sys
 import tweepy
@@ -15,6 +16,7 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 
 
+# Checking internet connection, return true/false
 def internet_connection(host="8.8.8.8", port=53, timeout=3):
     """
     Host: 8.8.8.8 (google-public-dns-a.google.com)
@@ -30,6 +32,7 @@ def internet_connection(host="8.8.8.8", port=53, timeout=3):
         return False
 
 
+# Menu check for y or n
 def y_or_n(s):
     if s == "y" or s == "n" or s == "Y" or s == "N":
         return True
@@ -37,6 +40,7 @@ def y_or_n(s):
         return False
 
 
+# Check if input isn't number
 def is_int(s):
     try:
         int(s)
@@ -45,10 +49,11 @@ def is_int(s):
         return False
 
 
+# Creating word cloud
 def word_cloud_generator(api, request):
     d = path.dirname(__file__)
     text = open(path.join(d, 'data.txt'), encoding="utf8").read()
-    wc = WordCloud(width=1920, height=1080, background_color="white", collocations=False).generate(text)
+    wc = WordCloud(width=1920, height=1080, background_color="white", collocations=False, max_font_size=None, font_step=1, mode='RGB', colormap=None, normalize_plurals=True).generate(text)
 
     plt.figure(figsize=(20, 10))  # specify the size of the figure
 
@@ -59,12 +64,15 @@ def word_cloud_generator(api, request):
 
     # load image
     imagePath = "cloud.png"
+
+    # Text for tweet
     status = "Most popular words\n" + request
 
-    # Send the tweet
+    # Send the tweet with image
     api.update_with_media(imagePath, status)
 
 
+#  Creating and posting tweet
 def tweet_generator(api, request):
     # Post settings
     def settings(tweet):
