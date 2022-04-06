@@ -1,7 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
+"""
+TweetyPy
 
-# Importing modules
+Machine learning app that can create own tweets and word clouds by learning from user statuses
+or top trend tweets using Markov chain
+
+@Author: Serhii Stets
+"""
+
 import re
 import sys
 import tweepy
@@ -17,12 +24,23 @@ from tweepy import TweepError
 from wordcloud import WordCloud
 
 
-# Checking internet connection, return true/false
-def internet_connection(host="8.8.8.8", port=53, timeout=3):
+def internet_connection(host: str="8.8.8.8", port: int=53, timeout: int=3) -> bool:
     """
+    Checking internet connection
+
     Host: 8.8.8.8 (google-public-dns-a.google.com)
     OpenPort: 53/tcp
     Service: domain (DNS/TCP)
+
+    Parameters
+    ----------
+    host : str
+    port : int
+    timeout : int
+
+    Returns
+    -------
+
     """
     try:
         socket.setdefaulttimeout(timeout)
@@ -105,7 +123,7 @@ def tweet_generator(api, request, key):
             # Post tweet
             api.update_status(header + tweet)
             print("\nDONE\n")
-            main()
+            tweetyPy()
         else:
             print("\nDo you want to create new sentence? (y/n)")
             s = input()
@@ -119,7 +137,7 @@ def tweet_generator(api, request, key):
             if s == "y" or s == "Y":
                 tweet = text_model.make_short_sentence(280 - len(header))
                 settings_acc(tweet, header, text_model)
-        main()
+        tweetyPy()
 
     # Post settings
     def settings_topic(tweet):
@@ -187,13 +205,13 @@ def tweet_generator(api, request, key):
             s = input()
 
         if s == "n" or s == "N":
-            main()
+            tweetyPy()
         else:
             # Generate word cloud
             word_cloud_generator(api, request)
 
         print('________________')
-        main()
+        tweetyPy()
 
     # Get raw text as string.
     with open("data.txt", encoding="utf8") as f:
@@ -236,7 +254,7 @@ def acc_tweet(api):
                 s = input()
 
             if s == "n" or s == "N":
-                main()
+                tweetyPy()
             else:
                 print("\nPrint username:")
                 account = input()
@@ -321,7 +339,7 @@ def topic_tweet(api, names, num):
     tweet_generator(api, request, "topic")
 
 
-def main():
+def tweetyPy() -> None:
     auth = tweepy.OAuthHandler(API_key, API_secret)
     auth.set_access_token(AT_token, AT_secret)
     auth.secure = True
@@ -349,6 +367,6 @@ def main():
 if __name__ == "__main__":
     # Checking for internet connection
     if internet_connection():
-        main()
+        tweetyPy()
     else:
         print("No internet connection")
