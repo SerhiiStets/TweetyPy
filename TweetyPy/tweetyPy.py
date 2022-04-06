@@ -24,23 +24,28 @@ from api import API_key, API_secret, AT_token, AT_secret
 class SendTweet:
     """Send tweets via tweepy."""
 
-    def __init__(self, twitter_api: tweepy.api, tweet: str, image_path: str = ""):
+    def __init__(self, twitter_api: tweepy.api, tweet: str, image_path: str = "") -> None:
         """Initialise SendTweet.
 
         Parameters
         ----------
         twitter_api : twitter_api
+            Twitter api point
         tweet : str
+            Text of the newly created tweet
         image_path : str
+            Path to generated wordcloud image
         """
         self.twitter_api = twitter_api
         self.tweet = tweet
         self.image_path = image_path  # Future wordcloud implementation
 
-    def send_text_tweet(self):
+    def send_text_tweet(self) -> None:
+        """Sends text tweet."""
         self.twitter_api.update_status(self.tweet)
 
-    def send_text_image_tweet(self):
+    def send_text_image_tweet(self) -> None:
+        """Sends tweet with text and image. """
         self.twitter_api.update_with_media(self.image_path, self.tweet)
 
 
@@ -69,39 +74,40 @@ class TweetGenerator:
             Final version of the tweet, ready to publish
         """
         text_model = markovify.Text(self.tweets)
-        result = text_model.make_short_sentence(len(self.topic_name) - 281)
+        result = None
+        while result is not None:
+            result = text_model.make_short_sentence(len(self.topic_name) - 281)
         return f"{self.topic_name} {result}"
 
-    def wordcloud_generator(self):
+    def wordcloud_generator(self) -> None:
         """Generating wordcloud with given topic and tweets."""
-        d = path.dirname(__file__)
-        twitter_mask = np.array(Image.open(path.join(d, "twitter_logo.png")))  # read the mask image
-        wc = WordCloud(background_color="white", mask=twitter_mask, contour_width=3, contour_color='steelblue')
-        wc.generate(self.tweets)  # generate word cloud
-        wc.to_file(path.join(d, "cloud.png"))
+        directory = path.dirname(__file__)
+        twitter_mask = np.array(Image.open(path.join(directory, "twitter_logo.png")))  # read the mask image
+        new_word_cloud = WordCloud(background_color="white", mask=twitter_mask, contour_width=3, contour_color='steelblue')
+        new_word_cloud.generate(self.tweets)  # generate word cloud
+        new_word_cloud.to_file(path.join(directory, "cloud.png"))
         status = f"Most popular words\n {self.topic_name}"
         raise NotImplementedError
 
 
-def create_tweet_by_topic(twitter_api: tweepy.api, topics: list, num: int) -> None:
+def create_tweet_by_topic(twitter_api: tweepy.api, topics: list[dict], num: int) -> None:
     """Gathering and publishing tweets by chosen topic.
 
     Parameters
     ----------
-    twitter_api
-    topics
-    num
-
-    Returns
-    -------
-
+    twitter_api : tweepy.api
+        Twitter api point
+    topics : list[dict[
+        Top 15 twitter trends topics as a list of dicts where trends settings are stored
+    num : int
+        Randomly chosen topic
     """
     topic_name = topics[num]['name']
 
     print("\n" + topic_name)
     tweets = []
     for tweet in tweepy.Cursor(twitter_api.search_tweets, q=topic_name + " -filter:retweets", result_type="mixed",
-                               lang="en").items(3000):
+                               lang="en").items(2500):
         tweets.append(re.sub(r'https\S+', '', tweet.text))
 
     generated_text = TweetGenerator(topic_name, tweets)
