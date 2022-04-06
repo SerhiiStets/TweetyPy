@@ -10,6 +10,7 @@ or top trend tweets using Markov chain
 
 import re
 import tweepy
+import logging
 import markovify
 
 import numpy as np
@@ -74,9 +75,9 @@ class TweetGenerator:
             Final version of the tweet, ready to publish
         """
         text_model = markovify.Text(self.tweets)
-        result = None
-        while result is not None:
-            result = text_model.make_short_sentence(len(self.topic_name) - 281)
+        result = ""
+        while result != "None":
+            result = text_model.make_short_sentence(281 - len(self.topic_name))
         return f"{self.topic_name} {result}"
 
     def wordcloud_generator(self) -> None:
@@ -103,23 +104,35 @@ def create_tweet_by_topic(twitter_api: tweepy.api, topics: list[dict], num: int)
         Randomly chosen topic
     """
     topic_name = topics[num]['name']
-
-    print("\n" + topic_name)
+    logging.info(f"The chosen topic is {topic_name}")
+    logging.info(f"Getting tweets")
     tweets = []
     for tweet in tweepy.Cursor(twitter_api.search_tweets, q=topic_name + " -filter:retweets", result_type="mixed",
                                lang="en").items(2500):
         tweets.append(re.sub(r'https\S+', '', tweet.text))
-
+    logging.info(f"{len(tweets)} tweets were read")
+    logging.info(f"Generating tweet")
     generated_text = TweetGenerator(topic_name, tweets)
+    logging.info(f"Sending tweet")
     new_tweet = SendTweet(twitter_api, generated_text.topic_tweet_generator())
     new_tweet.send_text_tweet()
 
 
 if __name__ == "__main__":
-    auth = tweepy.OAuthHandler(API_key, API_secret)
-    auth.set_access_token(AT_token, AT_secret)
-    auth.secure = True
-    api = tweepy.API(auth)
-    topic_names = api.get_place_trends(id=23424977)[0]['trends']  # Getting US based top twitter trends
-    print(type(topic_names[0]))
-    create_tweet_by_topic(api, topic_names, randint(0, 14))
+    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
+    logging.debug("########################")
+    logging.info("TweetyPy start")
+    logging.info("Authenticating to Twitter API")
+    try:
+        auth = tweepy.OAuthHandler(API_key, API_secret)
+        auth.set_access_token(AT_token, AT_secret)
+        auth.secure = True
+        api = tweepy.API(auth)
+        logging.info("Successfully Authenticated!")
+        topic_names = api.get_place_trends(id=23424977)[0]['trends']  # Getting US based top twitter trends
+        create_tweet_by_topic(api, topic_names, randint(0, 14))
+        logging.info("TweetyPy end")
+        logging.debug("########################")
+    except Exception as e:
+        logging.error(e)
+        logging.debug("########################")
