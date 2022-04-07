@@ -1,5 +1,4 @@
 markovify==0.9.4
-numpy==1.19.3
 setuptools==56.0.0
 tweepy==4.8.0
 wordcloud==1.8.1
