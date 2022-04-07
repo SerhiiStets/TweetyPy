@@ -1,3 +1,4 @@
-tweepy==3.5.0
-wordcloud==1.4.1
-markovify==0.7.1
+markovify==0.9.4
+numpy==1.19.3
+tweepy==4.8.0
+wordcloud==1.8.1
