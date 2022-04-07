@@ -9,6 +9,7 @@ or top trend tweets using Markov chain
 """
 
 import re
+import sys
 import tweepy
 import logging
 import markovify
@@ -75,9 +76,7 @@ class TweetGenerator:
             Final version of the tweet, ready to publish
         """
         text_model = markovify.Text(self.tweets)
-        result = ""
-        while result != "None":
-            result = text_model.make_short_sentence(281 - len(self.topic_name))
+        result = text_model.make_short_sentence(281 - len(self.topic_name))
         return f"{self.topic_name} {result}"
 
     def wordcloud_generator(self) -> None:
@@ -119,7 +118,7 @@ def create_tweet_by_topic(twitter_api: tweepy.api, topics: list[dict], num: int)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
+    logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, format="%(asctime)s - %(levelname)s - %(message)s")
     logging.debug("########################")
     logging.info("TweetyPy start")
     logging.info("Authenticating to Twitter API")
@@ -134,5 +133,5 @@ if __name__ == "__main__":
         logging.info("TweetyPy end")
         logging.debug("########################")
     except Exception as e:
-        logging.error(e)
+        logging.critical(e)
         logging.debug("########################")
