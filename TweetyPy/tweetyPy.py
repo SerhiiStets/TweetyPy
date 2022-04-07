@@ -9,6 +9,7 @@ or top trend tweets using Markov chain
 """
 
 import re
+import os
 import sys
 import tweepy
 import logging
@@ -128,8 +129,8 @@ def tweetypy_run() -> None:
     logging.info("TweetyPy start")
     logging.info("Authenticating to Twitter API")
     try:
-        auth = tweepy.OAuthHandler(API_key, API_secret)
-        auth.set_access_token(AT_token, AT_secret)
+        auth = tweepy.OAuthHandler(os.getenv("API_key", "optional-default"), os.getenv("API_secret", "optional-default"))
+        auth.set_access_token(os.getenv("AT_token", "optional-default"), os.getenv("AT_secret", "optional-default"))
         auth.secure = True
         api = tweepy.API(auth)
         logging.info("Successfully Authenticated!")
