@@ -21,8 +21,6 @@ from PIL import Image
 from random import randint
 from wordcloud import WordCloud
 
-from TweetyPy.api import API_key, API_secret, AT_token, AT_secret
-
 
 class SendTweet:
     """Send tweets via tweepy."""
