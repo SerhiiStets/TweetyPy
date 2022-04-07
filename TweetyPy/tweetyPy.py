@@ -83,7 +83,8 @@ class TweetGenerator:
         """Generating wordcloud with given topic and tweets."""
         directory = path.dirname(__file__)
         twitter_mask = np.array(Image.open(path.join(directory, "twitter_logo.png")))  # read the mask image
-        new_word_cloud = WordCloud(background_color="white", mask=twitter_mask, contour_width=3, contour_color='steelblue')
+        new_word_cloud = WordCloud(background_color="white", mask=twitter_mask, contour_width=3,
+                                   contour_color='steelblue')
         new_word_cloud.generate(self.tweets)  # generate word cloud
         new_word_cloud.to_file(path.join(directory, "cloud.png"))
         status = f"Most popular words\n {self.topic_name}"
@@ -120,7 +121,8 @@ def create_tweet_by_topic(twitter_api: tweepy.api, topics: list[dict], num: int)
     logging.info("Tweet is now live!")
 
 
-if __name__ == "__main__":
+def tweetypy_run() -> None:
+    """Auth to Twitter API, take 15 top topics and runs create_tweet_by_topic."""
     logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(asctime)s - %(levelname)s - %(message)s")
     logging.info("########################")
     logging.info("TweetyPy start")
@@ -138,3 +140,7 @@ if __name__ == "__main__":
     except Exception as e:
         logging.critical(e)
         logging.info("########################")
+
+
+if __name__ == "__main__":
+    tweetypy_run()
