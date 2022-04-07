@@ -97,29 +97,32 @@ def create_tweet_by_topic(twitter_api: tweepy.api, topics: list[dict], num: int)
     ----------
     twitter_api : tweepy.api
         Twitter api point
-    topics : list[dict[
+    topics : list[dict]
         Top 15 twitter trends topics as a list of dicts where trends settings are stored
     num : int
         Randomly chosen topic
     """
     topic_name = topics[num]['name']
     logging.info(f"The chosen topic is {topic_name}")
-    logging.info(f"Getting tweets")
+    logging.info("Getting tweets")
     tweets = []
     for tweet in tweepy.Cursor(twitter_api.search_tweets, q=topic_name + " -filter:retweets", result_type="mixed",
                                lang="en").items(2500):
         tweets.append(re.sub(r'https\S+', '', tweet.text))
     logging.info(f"{len(tweets)} tweets were read")
-    logging.info(f"Generating tweet")
+    logging.info("Generating tweet")
     generated_text = TweetGenerator(topic_name, tweets)
-    logging.info(f"Sending tweet")
-    new_tweet = SendTweet(twitter_api, generated_text.topic_tweet_generator())
+    created_tweet = generated_text.topic_tweet_generator()
+    logging.info(f"Created tweet - {created_tweet}")
+    logging.info("Sending tweet")
+    new_tweet = SendTweet(twitter_api, created_tweet)
     new_tweet.send_text_tweet()
+    logging.info("Tweet is now live!")
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, format="%(asctime)s - %(levelname)s - %(message)s")
-    logging.debug("########################")
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(asctime)s - %(levelname)s - %(message)s")
+    logging.info("########################")
     logging.info("TweetyPy start")
     logging.info("Authenticating to Twitter API")
     try:
@@ -131,7 +134,7 @@ if __name__ == "__main__":
         topic_names = api.get_place_trends(id=23424977)[0]['trends']  # Getting US based top twitter trends
         create_tweet_by_topic(api, topic_names, randint(0, 14))
         logging.info("TweetyPy end")
-        logging.debug("########################")
+        logging.info("########################")
     except Exception as e:
         logging.critical(e)
-        logging.debug("########################")
+        logging.info("########################")
