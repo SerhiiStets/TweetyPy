@@ -1,8 +1,6 @@
 markovify==0.9.4
 numpy==1.19.3
-Pillow~=8.0.1
 setuptools==56.0.0
 tweepy==4.8.0
 wordcloud==1.8.1
 APScheduler~=3.9.1
-numpy==1.19.3

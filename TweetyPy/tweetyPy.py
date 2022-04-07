@@ -15,9 +15,7 @@ import tweepy
 import logging
 import markovify
 
-import numpy as np
 from os import path
-from PIL import Image
 from random import randint
 from wordcloud import WordCloud
 
@@ -81,7 +79,7 @@ class TweetGenerator:
     def wordcloud_generator(self) -> None:
         """Generating wordcloud with given topic and tweets."""
         directory = path.dirname(__file__)
-        twitter_mask = np.array(Image.open(path.join(directory, "twitter_logo.png")))  # read the mask image
+        twitter_mask = ""  # np.array(Image.open(path.join(directory, "twitter_logo.png")))  # read the mask image
         new_word_cloud = WordCloud(background_color="white", mask=twitter_mask, contour_width=3,
                                    contour_color='steelblue')
         new_word_cloud.generate(self.tweets)  # generate word cloud
