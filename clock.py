@@ -5,7 +5,7 @@ from TweetyPy.tweetyPy import tweetypy_run
 scheduler = BlockingScheduler()
 
 
-@scheduler.scheduled_job('interval', minutes=60 * 4)
+@scheduler.scheduled_job('interval', minutes=60 * 8)
 def timed_job() -> None:
 	"""Runs TweetyPy every 4 hours."""
 	tweetypy_run()
