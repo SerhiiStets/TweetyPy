@@ -1,4 +1,4 @@
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 """
 TweetyPy
 
@@ -9,135 +9,129 @@ or top trend tweets using Markov chain
 """
 
 import re
-import os
 import sys
 import tweepy
 import logging
-import markovify
 
-from os import path
+from PIL import Image
+from enum import Enum
+from numpy import array
 from random import randint
+from os import path, getenv
 from wordcloud import WordCloud
+from io import BytesIO, BufferedReader
+from markovify import Text as markov_generate
 
 
-class SendTweet:
-    """Send tweets via tweepy."""
-
-    def __init__(self, twitter_api: tweepy.api, tweet: str, image_path: str = "") -> None:
-        """Initialise SendTweet.
-
-        Parameters
-        ----------
-        twitter_api : twitter_api
-            Twitter api point
-        tweet : str
-            Text of the newly created tweet
-        image_path : str
-            Path to generated wordcloud image
-        """
-        self.twitter_api = twitter_api
-        self.tweet = tweet
-        self.image_path = image_path  # Future wordcloud implementation
-
-    def send_text_tweet(self) -> None:
-        """Sends text tweet."""
-        self.twitter_api.update_status(self.tweet)
-
-    def send_text_image_tweet(self) -> None:
-        """Sends tweet with text and image. """
-        self.twitter_api.update_with_media(self.image_path, self.tweet)
+class CountryID(Enum):
+    """Twitter id for given country."""
+    UK = 23424975
+    USA = 23424977
+    CANADA = 23424775
+    BRAZIL = 23424768
+    GEMANY = 23424829
+    MEXICO = 23424900
 
 
-class TweetGenerator:
-    """Tweet and wordcloud generator."""
+class TweetyPy:
+    """TweetyPy implementation class."""
 
-    def __init__(self, topic_name: str, tweets: list[str]) -> None:
-        """Initialise TweetGenerator.
+    def __init__(self, API_key: str, API_secret: str, AI_token: str, AI_secret: str) -> None:
+        """Initialize TweetyPy object and check for authorization."""
+        self.twitter_auth = tweepy.OAuthHandler(API_key, API_secret)
+        self.twitter_auth.set_access_token(AI_token, AI_secret)
+        self.twitter_auth.secure = True
+        self.twitter_api = tweepy.API(self.twitter_auth)
+        self._check_authentication_to_twitter()
 
-        Parameters
-        ----------
-        topic_name : str
-            Twitter trends topic's name
-        tweets : list[str]
-            List of 3000 tweets from topic_name
-        """
-        self.topic_name = topic_name
-        self.tweets = tweets
+    def _check_authentication_to_twitter(self) -> None:
+        """Trying to get user @twitter from id to see if auth worked. Raise error if not."""
+        try:
+            self.twitter_api.get_user(user_id=783214)
+        except tweepy.errors.Unauthorized:
+            raise tweepy.TweepyException("Incorrect API keys, authentication error.")
 
-    def topic_tweet_generator(self) -> str:
-        """Generating tweet about trends topic using Markov's chain.
+    def get_trending_topics_by_country(self, country_id: CountryID) -> list[dict]:
+        """Returns a list of top trending topics in twitter for given country."""
+        return self.twitter_api.get_place_trends(id=country_id.value)[0]['trends']
 
-        Returns
-        -------
-        str
-            Final version of the tweet, ready to publish
-        """
-        text_model = markovify.Text(self.tweets)
-        result = text_model.make_short_sentence(281 - len(self.topic_name))
-        return f"{self.topic_name} {result}"
+    def get_tweets_by_topic(self, topic_name: str) -> list[str]:
+        """Return an array of tweets by given topic with removed url links in them."""
+        tweets_iterator = tweepy.Cursor(self.twitter_api.search_tweets, q=f"{topic_name} -filter:retweets",
+                                        result_type="mixed", lang="en").items(2500)
+        return [re.sub(r'https\S+', '', tweet.text) for tweet in tweets_iterator]
 
-    def wordcloud_generator(self) -> None:
+    @staticmethod
+    def generate_tweet(tweets: list[str]) -> str:
+        """Retuens newly create tweet from received list of tweets."""
+        if not tweets:
+            raise IndexError("Tweets list is empty, no tweets were given.")
+        text_model = markov_generate(tweets)
+        return text_model.make_short_sentence(280)
+
+    @staticmethod
+    def generate_wordcloud(tweets: str) -> Image.Image:
         """Generating wordcloud with given topic and tweets."""
-        directory = path.dirname(__file__)
-        twitter_mask = ""  # np.array(Image.open(path.join(directory, "twitter_logo.png")))  # read the mask image
-        new_word_cloud = WordCloud(background_color="white", mask=twitter_mask, contour_width=3,
+        current_directory = path.dirname(__file__)
+        # Reads the mask image of twitter logo to numpy array
+        twitter_mask = array(Image.open(path.join(current_directory, "twitter_logo.png")))
+        new_word_cloud = WordCloud(background_color="white", mask=twitter_mask, contour_width=5,
                                    contour_color='steelblue')
-        new_word_cloud.generate(self.tweets)  # generate word cloud
-        new_word_cloud.to_file(path.join(directory, "cloud.png"))
-        status = f"Most popular words\n {self.topic_name}"
-        raise NotImplementedError
+        new_word_cloud.generate(tweets)
+        return new_word_cloud.to_image()
+
+    def send_tweet(self, tweet: str, image: Image.Image = None) -> None:
+        """
+        Post tweet depending on if image was given or not.
+        Using BytesIO to save PIL.Image.Image object to memory
+        and then sent it as a meadia file to twitter.
+        """
+        if image:
+            bytes_obj = BytesIO()
+            image.save(bytes_obj, "PNG")  # saves image to buffer
+            # Change the stream position to the given byte offset
+            # back to the beginning of the file after writing the initial in memory file
+            bytes_obj.seek(0)
+            fp = BufferedReader(bytes_obj)  # read obj from buffer
+            self.twitter_api.update_status_with_media(tweet, filename="TweetyPy WordClouod", file=fp)
+        else:
+            self.twitter_api.update_status(tweet)
 
 
-def create_tweet_by_topic(twitter_api: tweepy.api, topics: list[dict], num: int) -> None:
-    """Gathering and publishing tweets by chosen topic.
-
-    Parameters
-    ----------
-    twitter_api : tweepy.api
-        Twitter api point
-    topics : list[dict]
-        Top 15 twitter trends topics as a list of dicts where trends settings are stored
-    num : int
-        Randomly chosen topic
-    """
-    topic_name = topics[num]['name']
-    logging.info(f"The chosen topic is {topic_name}")
-    logging.info("Getting tweets")
-    tweets = []
-    for tweet in tweepy.Cursor(twitter_api.search_tweets, q=topic_name + " -filter:retweets", result_type="mixed",
-                               lang="en").items(2500):
-        tweets.append(re.sub(r'https\S+', '', tweet.text))
-    logging.info(f"{len(tweets)} tweets were read")
-    logging.info("Generating tweet")
-    generated_text = TweetGenerator(topic_name, tweets)
-    created_tweet = generated_text.topic_tweet_generator()
-    logging.info(f"Created tweet - {created_tweet}")
-    logging.info("Sending tweet")
-    new_tweet = SendTweet(twitter_api, created_tweet)
-    new_tweet.send_text_tweet()
-    logging.info("Tweet is now live!")
-
-
-def tweetypy_run() -> None:
-    """Auth to Twitter API, take 15 top topics and runs create_tweet_by_topic."""
+def run_tweetyPy():
+    """Starting point for server and local runs of TweetyPy."""
     logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(asctime)s - %(levelname)s - %(message)s")
-    logging.info("########################")
-    logging.info("TweetyPy start")
-    logging.info("Authenticating to Twitter API")
     try:
-        auth = tweepy.OAuthHandler(os.getenv("API_key", "optional-default"), os.getenv("API_secret", "optional-default"))
-        auth.set_access_token(os.getenv("AT_token", "optional-default"), os.getenv("AT_secret", "optional-default"))
-        auth.secure = True
-        api = tweepy.API(auth)
-        logging.info("Successfully Authenticated!")
-        topic_names = api.get_place_trends(id=23424977)[0]['trends']  # Getting US based top twitter trends
-        create_tweet_by_topic(api, topic_names, randint(0, 14))
-        logging.info("TweetyPy end")
-        logging.info("########################")
+        API_key = getenv("API_key", "optional-default")
+        API_secret = getenv("API_secret", "optional-default")
+        AI_token = getenv("AT_token", "optional-default")
+        AI_secret = getenv("AT_secret", "optional-default")
+
+        tweetyPy = TweetyPy(API_key, API_secret, AI_token, AI_secret)
+        logging.info("Successfully Authenticated to Twitter API!")
+
+        trending_topics_list = tweetyPy.get_trending_topics_by_country(CountryID.USA)
+
+        random_topic = trending_topics_list[randint(0, 14)]['name']
+        logging.info(f"The chosen topic is {random_topic}")
+
+        tweets = tweetyPy.get_tweets_by_topic(random_topic)
+        logging.info(f"{len(tweets)} tweets were read")
+
+        generated_tweet = tweetyPy.generate_tweet(tweets)
+        logging.info(f"Generated tweet - {generated_tweet}")
+
+        if randint(0, 3) == 3:
+            # For roughly every 4th tweet we want to generate workcloud for it
+            wordcloud_image = tweetyPy.generate_wordcloud(' '.join(tweets))
+            tweetyPy.send_tweet(f"Most popular words\n {random_topic}", wordcloud_image)
+            logging.info("Generated wordcloud image.")
+
+        tweetyPy.send_tweet(generated_tweet)
+        logging.info("Tweet is now live!")
     except Exception as e:
         logging.critical(e)
-        logging.info("########################")
 
 
 if __name__ == "__main__":
-    tweetypy_run()
+    run_tweetyPy()
