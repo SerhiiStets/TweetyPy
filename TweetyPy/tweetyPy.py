@@ -122,7 +122,7 @@ def run_tweetyPy():
         logging.info(f"Generated tweet - {generated_tweet}")
 
         if randint(0, 3) == 3:
-            # For roughly every 4th tweet we want to generate workcloud for it
+            # For roughly every 4th tweet we want to generate wordcloud for it
             wordcloud_image = tweetyPy.generate_wordcloud(' '.join(tweets))
             tweetyPy.send_tweet(f"Most popular words\n {random_topic}", wordcloud_image)
             logging.info("Generated wordcloud image.")
