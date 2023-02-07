@@ -17,6 +17,7 @@ from PIL import Image
 from enum import Enum
 from numpy import array
 from random import randint
+from typing import Optional
 from os import path, getenv
 from wordcloud import WordCloud
 from io import BytesIO, BufferedReader
@@ -38,13 +39,13 @@ class TweetyPy:
 
     def __init__(self, API_key: str, API_secret: str, AI_token: str, AI_secret: str) -> None:
         """Initialize TweetyPy object and check for authorization."""
-        self.logger = self._create_logger()
-        self.chosen_topic = ""
-        self.tweets = []
-        self.API_key = API_key
-        self.API_secret = API_secret
-        self.AI_token = AI_token
-        self.AI_secret = AI_secret
+        self.logger: logging.Logger = self._create_logger()
+        self.chosen_topic: str = ""
+        self.tweets: list[str] = []
+        self.API_key: str = API_key
+        self.API_secret: str = API_secret
+        self.AI_token: str = AI_token
+        self.AI_secret: str = AI_secret
         self.twitter_api: tweepy.API = self._twitter_authorization()
 
     def _create_logger(self) -> logging.Logger:
@@ -111,7 +112,7 @@ class TweetyPy:
         logging.info("Generated wordcloud image.")
         return new_word_cloud.to_image()
 
-    def send_tweet(self, tweet: str, image: Image.Image = None) -> None:
+    def send_tweet(self, tweet: str, image: Optional[Image.Image] = None) -> None:
         """
         Post tweet depending on if image was given or not.
         Using BytesIO to save PIL.Image.Image object to memory

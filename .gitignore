@@ -1,7 +1,8 @@
 __pycache__/
-TweetyPy/api.py
-TweetyPy/__pycache__/
+.mypy_cache/
 Screenshots/
 TweetyPy/cloud.png
 .idea/
 .env
+dist/
+.venv/
