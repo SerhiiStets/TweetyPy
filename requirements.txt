@@ -1,5 +1,5 @@
 markovify==0.9.4
-setuptools==65.6.3
+setuptools==70.0.0
 tweepy==4.8.0
 wordcloud==1.8.1
 APScheduler~=3.9.1
